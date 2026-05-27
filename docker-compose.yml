@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: ai-video-editor
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Mapea la carpeta local ./uploads del host al directorio /app/uploads interno del contenedor.
+      # Esto permite que los videos pesados se guarden directamente en el almacenamiento del VPS.
+      - ./uploads:/app/uploads
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production

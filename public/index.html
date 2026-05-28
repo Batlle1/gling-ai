@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Video Editor - Gling UI Clone</title>
+    <title>AI Video Editor - Gling UI Clone (Pro)</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Usamos la tipografía Inter para un aspecto moderno y limpio -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 </head>
 <body>
@@ -17,7 +16,6 @@
                 <button class="tab">Files</button>
             </div>
             
-            <!-- Zona de Subida de Archivos -->
             <div class="upload-section" id="uploadSection">
                 <p style="margin-bottom: 15px; font-size: 14px; color: var(--text-muted);">Sube tu video para generar la transcripción automática.</p>
                 <input type="file" id="videoInput" accept="video/mp4,video/x-m4v,video/*">
@@ -25,12 +23,10 @@
                 <div id="uploadStatus"></div>
             </div>
 
-            <!-- Contenedor del Texto Sincronizado -->
             <div class="transcript-container" id="transcriptContainer" style="display: none;">
                 <!-- Los segmentos del transcript se inyectarán aquí dinámicamente -->
             </div>
             
-            <!-- Botón de Exportación -->
             <div class="export-section">
                 <button id="exportBtn" class="btn secondary" disabled>Exportar Edición</button>
             </div>
@@ -59,7 +55,6 @@
                 </select>
             </div>
 
-            <!-- Toggle para Omitir Cortes en Tiempo Real -->
             <div class="control-group toggle-group">
                 <label for="skipCutsToggle" title="Salta las partes cortadas durante la reproducción">Skip Cuts</label>
                 <label class="switch">
@@ -69,7 +64,7 @@
             </div>
             
             <div class="control-group">
-                <button class="btn" id="splitBtn" disabled>✂ Cortar</button>
+                <button class="btn" id="splitBtn" title="Atajo: Tecla S" disabled>✂ Split (S)</button>
             </div>
             
             <div class="control-group zoom-group">
@@ -78,13 +73,19 @@
             </div>
         </div>
         
-        <!-- Línea de Tiempo Interactiva -->
+        <!-- Línea de Tiempo Interactiva (Free Scrubbing) -->
         <div class="timeline-container" id="timelineContainer">
             <div class="timeline-track" id="timelineTrack">
                 <!-- Bloques proporcionales a los segmentos irán aquí -->
             </div>
             <!-- Indicador de Tiempo (Playhead) -->
             <div class="playhead" id="playhead"></div>
+            
+            <!-- YouTube Style Hover Thumbnail -->
+            <div id="thumbContainer" class="thumb-container">
+                <video id="thumbVideo" muted preload="auto"></video>
+                <div id="thumbTime" class="thumb-time">00:00</div>
+            </div>
         </div>
     </footer>
 

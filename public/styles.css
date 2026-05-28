@@ -35,7 +35,7 @@ body {
 .app-container {
     display: flex;
     flex: 1;
-    height: calc(100vh - 120px); /* Deja espacio inferior para la línea de tiempo */
+    height: calc(100vh - 120px);
 }
 
 /* PANELES */
@@ -129,7 +129,6 @@ body {
     padding: 15px;
 }
 
-/* Ocultar barra de desplazamiento visualmente, manteniendo funcionalidad */
 .transcript-container::-webkit-scrollbar {
     width: 6px;
 }
@@ -154,13 +153,11 @@ body {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-/* Estado activo: cuando el video pasa por este bloque */
 .segment.active {
     border-color: var(--accent);
     background-color: rgba(94, 106, 210, 0.1);
 }
 
-/* Estado cortado (Cut) */
 .segment.cut {
     text-decoration: line-through;
     color: var(--cut-text);
@@ -299,11 +296,12 @@ input:checked + .slider:before {
 .timeline-container {
     position: relative;
     flex: 1;
-    overflow-x: auto;
-    overflow-y: hidden;
+    overflow-x: auto; /* Scroll horizontal si hay zoom */
+    overflow-y: visible; /* Permite que el thumbnail flote afuera */
     background-color: #111;
     display: flex;
     align-items: center;
+    cursor: crosshair; /* Indica free scrubbing */
 }
 
 .timeline-track {
@@ -316,6 +314,7 @@ input:checked + .slider:before {
     width: 100%; /* Ajustable por zoom */
     overflow: hidden;
     box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    pointer-events: none; /* Dejamos los eventos al contenedor para scrubbing fluido */
 }
 
 .timeline-block {
@@ -323,12 +322,7 @@ input:checked + .slider:before {
     background-color: var(--timeline-block);
     border-right: 1px solid #222;
     position: relative;
-    cursor: pointer;
     transition: background-color 0.2s;
-}
-
-.timeline-block:hover {
-    background-color: #555;
 }
 
 .timeline-block.cut {
@@ -349,7 +343,6 @@ input:checked + .slider:before {
     pointer-events: none;
     z-index: 10;
     left: 20px; /* Offset del margen */
-    transition: left 0.1s linear;
 }
 .playhead::before {
     content: '';
@@ -360,4 +353,40 @@ input:checked + .slider:before {
     height: 12px;
     background-color: #ff3333;
     clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+
+/* HOVER THUMBNAIL (YouTube Style) */
+.thumb-container {
+    position: fixed;
+    bottom: 110px; /* Sobre la línea de tiempo */
+    width: 160px;
+    height: 90px;
+    background: #000;
+    border: 2px solid var(--accent);
+    border-radius: 4px;
+    display: none;
+    pointer-events: none;
+    transform: translateX(-50%);
+    z-index: 100;
+    overflow: hidden;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+}
+
+#thumbVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.thumb-time {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.8);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: white;
+    font-weight: 500;
 }

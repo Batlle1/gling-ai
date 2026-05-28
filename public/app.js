@@ -22,7 +22,7 @@ const thumbTime = document.getElementById('thumbTime');
 
 // Estado Global
 let currentVideoFilename = null;
-let segments = []; // [{id, text, start, end, isCut}]
+let segments = []; 
 let videoDuration = 0;
 
 // --- AUTO-GUARDADO (LOCALSTORAGE) ---
@@ -43,15 +43,12 @@ function loadState(filename) {
 // --- 1. LÓGICA DE SUBIDA DE VIDEO ---
 uploadBtn.addEventListener('click', async () => {
     const file = videoInput.files[0];
-    if (!file) {
-        alert('Por favor selecciona un archivo de video primero.');
-        return;
-    }
+    if (!file) return alert('Por favor selecciona un archivo de video primero.');
 
     const formData = new FormData();
     formData.append('video', file);
 
-    uploadStatus.textContent = 'Subiendo y procesando audio (Groq Whisper)...';
+    uploadStatus.textContent = 'Procesando en IA (Whisper + Gemini)...';
     uploadStatus.style.color = 'var(--text-muted)';
     uploadBtn.disabled = true;
 
@@ -66,14 +63,13 @@ uploadBtn.addEventListener('click', async () => {
 
         currentVideoFilename = data.filename;
         
-        // Carga desde localStorage si existe edición previa
         if (!loadState(currentVideoFilename)) {
             segments = data.transcript;
-            saveState(); // Guarda estado inicial
+            saveState(); 
         }
         
         player.src = data.videoUrl;
-        thumbVideo.src = data.videoUrl; // Carga el video oculto para miniaturas
+        thumbVideo.src = data.videoUrl; 
         
         player.onloadedmetadata = () => {
             videoDuration = player.duration;
@@ -83,7 +79,7 @@ uploadBtn.addEventListener('click', async () => {
             splitBtn.disabled = false;
         };
 
-        uploadStatus.textContent = '¡Video cargado con éxito!';
+        uploadStatus.textContent = '¡Análisis IA completado!';
         uploadStatus.style.color = '#4ade80';
         
         setTimeout(() => {
@@ -93,7 +89,7 @@ uploadBtn.addEventListener('click', async () => {
 
     } catch (err) {
         console.error("Error subiendo video:", err);
-        uploadStatus.textContent = 'Error al subir el video.';
+        uploadStatus.textContent = 'Error procesando archivo.';
         uploadStatus.style.color = '#ff5555';
         uploadBtn.disabled = false;
     }
@@ -163,12 +159,10 @@ function performSplit() {
     
     const activeSeg = segments[activeIndex];
     
-    // Evitar cortes muy pequeños (< 0.1s de los bordes)
     if (ct - activeSeg.start < 0.1 || activeSeg.end - ct < 0.1) return;
 
-    // Dividimos el segmento en dos
     const seg1 = { ...activeSeg, end: ct };
-    const seg2 = { ...activeSeg, start: ct, id: Date.now() }; // Nuevo ID para el pedazo restante
+    const seg2 = { ...activeSeg, start: ct, id: Date.now() }; 
     
     segments.splice(activeIndex, 1, seg1, seg2);
     
@@ -179,73 +173,89 @@ function performSplit() {
 
 splitBtn.addEventListener('click', performSplit);
 
-// Atajo de teclado 'S'
 window.addEventListener('keydown', (e) => {
-    // Si el usuario no está en un input y presiona S
     if (e.key.toLowerCase() === 's' && document.activeElement.tagName !== 'INPUT' && videoDuration) {
         performSplit();
     }
 });
 
-// --- 6. FREE SCRUBBING Y HOVER THUMBNAIL ---
-let isDraggingTimeline = false;
+// --- 6. DRAGGABLE PLAYHEAD & FREE SCRUBBING EXACTO ---
+let isDraggingPlayhead = false;
 
+// Calcula el tiempo relativo a partir del click/arrastre en el track
 function seekFromMouseEvent(e) {
     if (!videoDuration) return;
+    
+    // getBoundingClientRect() garantiza la posición X exacta independientemente de los hijos
     const rect = timelineTrack.getBoundingClientRect();
-    // Offset de 20px manejado por el contenedor padre, pero track es exacto
     let x = e.clientX - rect.left; 
     let percent = x / rect.width;
+    
     if (percent < 0) percent = 0;
     if (percent > 1) percent = 1;
+    
     player.currentTime = percent * videoDuration;
 }
 
+// Click en cualquier lado del contenedor para saltar
 timelineContainer.addEventListener('mousedown', (e) => {
-    isDraggingTimeline = true;
-    seekFromMouseEvent(e);
-});
-
-window.addEventListener('mouseup', () => {
-    isDraggingTimeline = false;
-});
-
-timelineContainer.addEventListener('mousemove', (e) => {
-    if (!videoDuration) return;
-    
-    // Si está arrastrando, hacer scrubbing libre
-    if (isDraggingTimeline) {
+    // Solo si el click no es explícitamente en el playhead (que tiene drag)
+    if (e.target !== playhead && e.target !== thumbContainer && e.target !== thumbVideo && e.target !== thumbTime) {
         seekFromMouseEvent(e);
     }
+});
+
+// Drag & Drop explícito del Playhead
+playhead.addEventListener('mousedown', (e) => {
+    isDraggingPlayhead = true;
+    e.stopPropagation(); // Evita que se propague al contenedor
+});
+
+// Escuchas en todo el documento para que el drag no se pierda al mover rápido el mouse
+document.addEventListener('mouseup', () => {
+    isDraggingPlayhead = false;
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!videoDuration) return;
     
-    // Lógica para Hover Thumbnail (YouTube style)
+    // Si arrastra el cabezal, actualiza el video
+    if (isDraggingPlayhead) {
+        seekFromMouseEvent(e);
+        return; // Salir para no procesar el hover thumbnail simultáneamente
+    }
+    
+    // Lógica para Hover Thumbnail (YouTube style) si no estamos arrastrando el cabezal
     const rect = timelineTrack.getBoundingClientRect();
     let x = e.clientX - rect.left;
-    let percent = x / rect.width;
-    if (percent < 0) percent = 0;
-    if (percent > 1) percent = 1;
     
-    const hoverTime = percent * videoDuration;
-    
-    thumbContainer.style.display = 'block';
-    
-    // Posicionar contenedor de miniatura sin salirse de la pantalla
-    let thumbX = e.clientX;
-    const thumbWidth = 160; 
-    if (thumbX < thumbWidth / 2) thumbX = thumbWidth / 2;
-    if (thumbX > window.innerWidth - thumbWidth / 2) thumbX = window.innerWidth - thumbWidth / 2;
-    
-    thumbContainer.style.left = `${thumbX}px`;
-    thumbTime.textContent = formatTime(hoverTime);
-    
-    // Actualizar video secundario (limitar frecuencia para mejor rendimiento)
-    if (Math.abs(thumbVideo.currentTime - hoverTime) > 0.5) {
-        thumbVideo.currentTime = hoverTime;
+    // Solo mostramos thumbnail si el cursor está sobre la barra
+    if (x >= 0 && x <= rect.width && e.clientY >= rect.top - 20 && e.clientY <= rect.bottom + 20) {
+        let percent = x / rect.width;
+        const hoverTime = percent * videoDuration;
+        
+        thumbContainer.style.display = 'block';
+        
+        let thumbX = e.clientX;
+        const thumbWidth = 160; 
+        if (thumbX < thumbWidth / 2) thumbX = thumbWidth / 2;
+        if (thumbX > window.innerWidth - thumbWidth / 2) thumbX = window.innerWidth - thumbWidth / 2;
+        
+        thumbContainer.style.left = `${thumbX}px`;
+        thumbTime.textContent = formatTime(hoverTime);
+        
+        if (Math.abs(thumbVideo.currentTime - hoverTime) > 0.5) {
+            thumbVideo.currentTime = hoverTime;
+        }
+    } else {
+        thumbContainer.style.display = 'none';
     }
 });
 
 timelineContainer.addEventListener('mouseleave', () => {
-    thumbContainer.style.display = 'none';
+    if (!isDraggingPlayhead) {
+        thumbContainer.style.display = 'none';
+    }
 });
 
 // --- 7. LÓGICA DE REPRODUCCIÓN EN TIEMPO REAL Y "SKIP CUTS" ---
@@ -259,7 +269,7 @@ player.addEventListener('timeupdate', () => {
 
     const activeIndex = segments.findIndex(seg => ct >= seg.start && ct < seg.end);
     
-    // "Skip Cuts" Mágico
+    // "Skip Cuts"
     if (skipCutsToggle.checked && activeIndex !== -1 && segments[activeIndex].isCut) {
         const nextValidSegment = segments.slice(activeIndex).find(seg => !seg.isCut);
         if (nextValidSegment) {
@@ -269,7 +279,7 @@ player.addEventListener('timeupdate', () => {
         }
     }
 
-    // UI Updates Reactivos
+    // Reactividad Visual
     document.querySelectorAll('.segment').forEach((el, i) => {
         el.classList.toggle('active', i === activeIndex && !segments[i].isCut);
     });
@@ -310,7 +320,7 @@ exportBtn.addEventListener('click', async () => {
         const data = await response.json();
         if(data.error) throw new Error(data.error);
 
-        alert('¡El procesamiento CFR FFmpeg (filter_complex) ha iniciado!\n\nRevisa el archivo final en: ' + data.outputUrl);
+        alert('¡El procesamiento FFmpeg ha iniciado!\n\nRevisa el archivo final en: ' + data.outputUrl);
     } catch (err) {
         console.error(err);
         alert('Hubo un error al intentar exportar el video.');
@@ -320,8 +330,7 @@ exportBtn.addEventListener('click', async () => {
     }
 });
 
-// --- UTILIDAD ---
 function formatTime(seconds) {
     const d = new Date(seconds * 1000);
-    return d.toISOString().substring(14, 19); // Muestra HH:MM:SS de manera simple
+    return d.toISOString().substring(14, 19); 
 }

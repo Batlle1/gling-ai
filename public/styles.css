@@ -338,9 +338,11 @@ input:checked + .slider:before {
     position: absolute;
     top: 0;
     bottom: 0;
-    width: 2px;
-    background-color: #ff3333;
-    pointer-events: none;
+    width: 16px;
+    margin-left: -8px; /* Centrado respecto al cabezal */
+    background-color: transparent; /* Zona ampliada para arrastrar */
+    cursor: grab;
+    pointer-events: auto; /* Permite clicks y arrastre */
     z-index: 10;
     left: 20px; /* Offset del margen */
 }
@@ -348,11 +350,25 @@ input:checked + .slider:before {
     content: '';
     position: absolute;
     top: 0;
-    left: -5px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 12px;
     height: 12px;
     background-color: #ff3333;
     clip-path: polygon(0 0, 100% 0, 50% 100%);
+}
+.playhead::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background-color: #ff3333;
+}
+.playhead:active {
+    cursor: grabbing;
 }
 
 /* HOVER THUMBNAIL (YouTube Style) */
